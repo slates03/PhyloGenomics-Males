@@ -15,26 +15,96 @@ This workflow is rough (v0.01) at the moment and has some scripting steps I need
   - odb9_OG2genes.tab
   - odb9_fasta_metazoa.tgz (very large data set)
 
-# Extract ORTHODB IDs
-I've provided an R script that extracts the relevant taxonomic levels of all species within orthodb v9.1 using taxize. It is important to check the output of this file by eye before proceeding. Occasionally, taxize can misplace taxonomic levels (e.g. Loa loa is apparently a Hymenopteran).
+# Extract Orthologs
+Orthologs were produced from a previous analysis, so I used this list for genes of interest. 
+
+Filter Orholog list to include orthologs conserved across all corbiculate bees
+``` 
+awk '!/NA/' /depot/bharpur/data/ref_genomes/AMEL/resources/orthologs/orthologs > orthologs_fullrows
+```
+I then made an ortholog list for all bee species
+
+Honey Bee -AMEL
+``` 
+awk '{print $2}' orthologs_fullrows > AMEL_ortho_2
+``` 
+
+Bombus terrestris -BTER
 
 ``` 
-output_taxa.r 
+awk '{print $3}' orthologs_fullrows > BTER_ortho
+``` 
+
+Bombus impatiens -BIMP
+
+``` 
+awk '{print $4}' orthologs_fullrows > BIMP_ortho
+``` 
+Tetragonula carbonara 
+
+``` 
+awk '{print $5}' orthologs_fullrows > TCARB_ortho
+``` 
+Megachile rotundata -MROT
+
+``` 
+awk '{print $6}' orthologs_fullrows > MROT_ortho
+``` 
+Euglossa dilemma -EDIL
+
+``` 
+awk '{print $7}' orthologs_fullrows > EDIL_ortho
+``` 
+
+# Produce Species specific FASTA
+Here, I make a new .fasta with the species of interest and the orthologs conserved across the bee species
+
+## Make a FASTA file with only CDS sequences for .bed file
+I convert the GFF to a GFT (non necessary really), and then extract only CDS (very necessary). I needed to produce a .bed file, but I could have produced this from the GFT
+
+```
+module load bioinfo
+module load gffread 
+
+gffread /depot/bharpur/data/projects/slater/genome/GCF_003254395.2_Amel_HAv3.1_genomic.gff -F -T -o GCF_003254395.2_Amel_HAv3.1_genomic_2.gft
+awk '$3 == "CDS" {print $0}'  /depot/bharpur/data/projects/slater/genome/GCF_003254395.2_Amel_HAv3.1_genomic_2.gft > Amel_CDS.gft
+```
+## Make .bed file from CDS FASTA file
+I made a .bed file by using the gft2bed, and then I converted the bed file to include 4 columns: 1)chromosome, 2)start, 3)end, 4)protein_id. The first 3 are necesssary, but the 4th I needed for the ortholog document
+
+
+```
+module load bioinfo
+module load bedops
+
+
+gtf2bed < Amel_CDS.gft > Amel_CDS.bed
+awk '{ print $1 " " $2 " " $3 }' Amel_CDS.bed > Amel_CDS_1.bed
+grep "protein_id$pattern" Amel_CDS.bed  | grep -o 'protein_id[^;]*'| sed 's/protein_id//g' > AMEL_protein_id
+paste Amel_CDS_1.bed AMEL_protein_id > Amel_CDS_2.bed
+```
+For MROT, I made the .bed file straight from the GFT CDS file. I did something similar for EDIL, except I made it from the GFF and extracted "Parent" instead of protein_id. 
+
+```
+awk '{ print $1 " " $4 " " $5 }' MROT_CDS.gft > MROT_CDS_1.bed
+grep "protein_id$pattern" MROT_CDS.gft  | grep -o 'protein_id[^;]*'| sed 's/protein_id//g' > MROT_protein_id
 ```
 
-Depending on how you've run this script, it will output species lists for you to check and continue with that looks like this (focal_spp)
+## CDS FASTA file
+I made a CDS FASTA file, which I will need to produce sequence specific fasta. This includes cleaning and removing (i.e. remove ") and changing spaces to tabs, which is necessary for bedtools
 
 ```
-7460 Apis mellifera 12101 83040 C
-7461 Apis cerana 8915 64537 C
-7462 Apis dorsata 10452 75545 C
-7463 Apis florea 11816 80899 C
-7493 Trichogramma pretiosum 11988 43779 C
-The first column contains the OrthoDB species ID and the second is the species name and can be cut out of the file (in this case, by file is 'lower_spp').
+awk -F"[:-]" 'BEGIN{ OFS="\t"; }{ print $1, $2, $3, $4;}' Amel_CDS_2.bed | sed 's/"//' | sed 's/"//' > Amel_CDS_final_1.bed
+awk '{;$1=$1}1' OFS="\t" Amel_CDS_final_1.bed > Amel_CDS_final.bed
+bedtools getfasta -fi /depot/bharpur/data/ref_genomes/AMEL/GCF_003254395.2_Amel_HAv3.1_genomic.fna -bed Amel_CDS_final.bed -name > AMEL_CDS.fasta
 ```
+This tool verifies whether the document is tabs-delineated
+
 ```
-cut -f1 -d' ' lower_spp > lower_spp_IDs
+cat -A Amel_CDS_final.bed| head
 ```
+
+
 
 # ID Species of interest, extract genes
 Here, I am extracting all Apis mellifera genes
