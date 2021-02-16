@@ -165,7 +165,7 @@ I ran FEL in HyPhy using the shell ```hyphy.sh```. The parameters were standanda
 
 # Summarize Data
 
-I extract the dNdS values for each gene using the R script ```json_extraction.R```.
+I extracted the dNdS values for each gene using the R script ```json_extraction.R```.
 
 
 
