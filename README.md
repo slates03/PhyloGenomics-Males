@@ -17,11 +17,11 @@ This workflow is rough (v0.01) at the moment and has some scripting steps I need
 
 
 # Produce Orthologs
-Run blast for each species versus all using ``` allblast.sh ```. The species include Tetragonula carbonaria (TCARB), Apis mellifera (AMEL),Bombus terrestris (BTER) Bombus impatiens (BIMP), Euglossa dilemma (EDIL) and Megachile rotundata (MROT). It is faster to run each blast in parallel for each species. 
+Run blast for each species versus each other using ``` allblast.sh ```. The species include Tetragonula carbonaria (TCARB), Apis mellifera (AMEL),Bombus terrestris (BTER) Bombus impatiens (BIMP), Euglossa dilemma (EDIL) and Megachile rotundata (MROT). It is faster to run each blast in parallel for each species. 
 
 The ortholog list was then produced using ``` blastbest.R ```. The acronyms in the file include:Tetragonula carbonaria (tc), Apis mellifera (am),Bombus terrestris (bt) (BTER) Bombus impatiens (bi), Euglossa dilemma (ed) and Megachile rotundata (mr)
 
-One the orthlog list is produced, I made a new ortholog file (orthologs_fullrows for the analysis that include orthologs across the five species of interest: AMEL,BIMP,EDIL,TCARB and MROT
+Once the orthlog list is produced, the final ortholog file (orthologs_fullrows) for the analysis is produced by only included species of interest (AMEL,BIMP,EDIL,TCARB and MROT) and ensuring an ortholog is availible for each species.
 
  ```
 awk '{print $2 " " $4 " " $5 " " $6 " " $7}' orthologs | sed 's/"//g'> orthologs_2
