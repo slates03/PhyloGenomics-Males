@@ -8,12 +8,13 @@ This workflow is rough (v0.01) at the moment and has some scripting steps I need
 
 # Requirements
 - R 3.1 or higher, with the following packages installed:
-  - taxize
+  - library(data.table)
+  - library(stringr)
+  - library(dplyr)
+  -library(tidyr)
 - muscle 3.8.3
-- Database files from OrthoDB v9.1:
-  - odb9_species.tab
-  - odb9_OG2genes.tab
-  - odb9_fasta_metazoa.tgz (very large data set)
+- HyPhy 2.3.13
+
 
 # Extract Orthologs
 Orthologs were produced from a previous analysis, so I used this list for genes of interest. 
