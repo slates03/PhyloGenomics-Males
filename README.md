@@ -16,46 +16,19 @@ This workflow is rough (v0.01) at the moment and has some scripting steps I need
 - HyPhy 2.3.13
 
 
-# Extract Orthologs
-Orthologs were produced from a previous analysis, so I used this list for genes of interest. 
+# Produce Orthologs
+Run blast for each species versus all using ``` allblast.sh ```. The species include Tetragonula carbonaria (TCARB), Apis mellifera (AMEL),Bombus terrestris (BTER) Bombus impatiens (BIMP), Euglossa dilemma (EDIL) and Megachile rotundata (MROT). It is faster to run each blast in parallel for each species. 
 
-Filter Orholog list to include orthologs conserved across all corbiculate bees
-``` 
-awk '!/NA/' /depot/bharpur/data/ref_genomes/AMEL/resources/orthologs/orthologs > orthologs_fullrows
-```
-I then made an ortholog list for all bee species
+The ortholog list was then produced using ``` blastbest.R ```. The acronyms in the file include:Tetragonula carbonaria (tc), Apis mellifera (am),Bombus terrestris (bt) (BTER) Bombus impatiens (bi), Euglossa dilemma (ed) and Megachile rotundata (mr)
 
-Honey Bee -AMEL
-``` 
-awk '{print $2}' orthologs_fullrows > AMEL_ortho_2
-``` 
+One the orthlog list is produced, I made a new ortholog file (orthologs_fullrows for the analysis that include orthologs across the five species of interest: AMEL,BIMP,EDIL,TCARB and MROT
 
-Bombus terrestris -BTER
+ ```
+awk '{print $2 " " $4 " " $5 " " $6 " " $7}' orthologs | sed 's/"//g'> orthologs_2
 
-``` 
-awk '{print $3}' orthologs_fullrows > BTER_ortho
-``` 
-
-Bombus impatiens -BIMP
-
-``` 
-awk '{print $4}' orthologs_fullrows > BIMP_ortho
-``` 
-Tetragonula carbonara 
-
-``` 
-awk '{print $5}' orthologs_fullrows > TCARB_ortho
-``` 
-Megachile rotundata -MROT
-
-``` 
-awk '{print $6}' orthologs_fullrows > MROT_ortho
-``` 
-Euglossa dilemma -EDIL
-
-``` 
-awk '{print $7}' orthologs_fullrows > EDIL_ortho
-``` 
+#Only full row - Remove NAs
+awk '!/NA/' orthologs_2 | sed 's/ /|/g' > orthologs_fullrows
+ ```
 
 # Produce Species specific FASTA
 Here, I make a new .fasta with the species of interest and the orthologs conserved across the bee species
