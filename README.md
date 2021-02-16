@@ -1,10 +1,5 @@
-# Conserved Exon Identification
-
-The Conserved Exons (CE) pipeline identifies conserved- and non-conserved sites within a protein alignment for a focal species against closely and more distantly-related taxa. The piepline makes use of OrthoDB v 9.1. This database contains orthologous proteins for 172 vertebrates, 133 arthropods, 227 fungi, 25 basal metazoans, 3663 bacteria and 31 plants. While a great resource, the database does change IDs and formats between iterations, so use extreme caution if you are applying this pipeline to any database beyond v9.1.
-
-By downloading the peptide data, extracting relevant taxa, aligning the output, and outputing conservation scores, this pipeline identifies conserved peptides across a given phylogeny within known orthologs.
-
-This workflow is rough (v0.01) at the moment and has some scripting steps I need to remove and assumptions I need to test.
+# Selection Identification on Male Genes
+The selection pipeline identifies selection (dNdS) on orthologs across corbiculate bees (and outgroup Megachile rotundata). The pipeline uses orthologs produced using a Blast across all the species. These orthologs were then used to identify genes of interest and measure selection on these genes using HyPhy. This analysis allows us to look at divergence across corbiculate bees.
 
 # Requirements
 - R 3.1 or higher, with the following packages installed:
@@ -21,6 +16,13 @@ This workflow is rough (v0.01) at the moment and has some scripting steps I need
 - gffread 0.9.10
 - bedops 2.4.29
 - seqkit
+
+# Species Acronyms
+- Apis mellifera=AMEL
+- Bombus impatiens=BIMP
+- Megachile rotundata=MROT
+- Tetragonula carbonaria=TCARB
+- Euglossa dilemma=EDIL
 
 # Produce Orthologs
 Run blast for each species versus each other using ``` allblast.sh ```. The species include Tetragonula carbonaria (TCARB), Apis mellifera (AMEL),Bombus terrestris (BTER) Bombus impatiens (BIMP), Euglossa dilemma (EDIL) and Megachile rotundata (MROT). It is faster to run each blast in parallel for each species. 
@@ -147,6 +149,7 @@ Muscle was used for the alignment using the ```muscle.sh```. Within the shell, a
 
 The phylogenetic tree must only include species within the analysis. I used the ```ape``` package in R. 
 
+```
 install.packages("ape")
 library(ape)
 
@@ -154,6 +157,7 @@ tree<-read.tree("/directory/file.tre")
 species<-c("GEN_apis_mellifera","GEN_bombus_impatiens","GEN_megachile_rotundata")
 pruned.tree<-drop.tip(tree,tree$tip.label[-match(species, tree$tip.label)])
 write.tree(pruned.tree,"/directory/pruned.tree")
+```
 
 # Run Selection Analysis with Hyphy
 
