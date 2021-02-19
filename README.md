@@ -167,7 +167,7 @@ I ran FEL in HyPhy using the shell ```hyphy.sh```. The parameters were standanda
 
 I extracted the dNdS values for each gene using the R script ```json_extraction.R```. 
 
-I use the pre-existing transcript to GB file ```json_extraction.R``` and I made a protein to transcript file in order to add GB numbers. 
+I use the pre-existing transcript to GB file ```NCBI_to_GB.csv``` and I made a protein to transcript file in order to add GB numbers ```AMEL_transcript_to_protein```. 
 
 ```
 grep "protein_id$pattern" Amel_CDS.bed | grep -o 'protein_id[^;]*'| sed 's/protein_id//g' | sed 's/"//' | sed 's/"//' > AMEL_protein_id
