@@ -165,7 +165,15 @@ I ran FEL in HyPhy using the shell ```hyphy.sh```. The parameters were standanda
 
 # Summarize Data
 
-I extracted the dNdS values for each gene using the R script ```json_extraction.R```.
+I extracted the dNdS values for each gene using the R script ```json_extraction.R```. 
+
+I use the pre-existing transcript to GB file ```json_extraction.R``` and I made a protein to transcript file in order to add GB numbers. 
+
+```
+grep "protein_id$pattern" Amel_CDS.bed | grep -o 'protein_id[^;]*'| sed 's/protein_id//g' | sed 's/"//' | sed 's/"//' > AMEL_protein_id
+grep "Name$pattern" Amel_CDS.bed | grep -o 'Name[^;]*'| sed 's/Name//g' | sed 's/"//' | sed 's/"//' > AMEL_tran_id
+paste -d " " AMEL_protein_id AMEL_tran_id >  AMEL_transcript_to_protein
+```
 
 
 
