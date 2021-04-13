@@ -145,7 +145,7 @@ TR_euglossa_dilemma
 
 Muscle was used for the alignment using the ```muscle.sh```. Within the shell, all stop codons were removed so the code could be run through HyPhy
 
-I also removed all gaps using ```muscle.sh```. This made sure the program ran with all genes. I also removed double stop codons.
+I also removed all gaps using ```muscle.sh```. This made sure the program ran with all genes. I also removed double stop codons with ```trip_stop.sh```.
 
 # Pruning Phylogenetic Tree
 
