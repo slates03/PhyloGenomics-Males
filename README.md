@@ -145,6 +145,8 @@ TR_euglossa_dilemma
 
 Muscle was used for the alignment using the ```muscle.sh```. Within the shell, all stop codons were removed so the code could be run through HyPhy
 
+I also removed all gaps using ```muscle.sh```. This made sure the program ran with all genes. I also removed double stop codons.
+
 # Pruning Phylogenetic Tree
 
 The phylogenetic tree must only include species within the analysis. I used the ```ape``` package in R. 
