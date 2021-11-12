@@ -12,7 +12,7 @@ json<-as.character(json[,1])
 for(i in json){
 
 
-attach<-"_aligned_2.fasta.FEL.json"
+attach<-"_aligned_3.fasta.FEL.json"
 file<-gsub(" ", "", paste(i, attach))
 
 
