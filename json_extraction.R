@@ -6,7 +6,7 @@ R
 
 phylo<-matrix(nrow=0,ncol=7)
 colnames(phylo)<-c("ID","dN","dS","dNdS","LogL","AIC","Param")
-json<-read.table("/depot/bharpur/data/projects/slater/Phylo_MaleEvolution/Resources/Alignment/json")
+json<-read.table("/depot/bharpur/data/projects/slater/Phylo_MaleEvolution/Resources/Alignment/json_3")
 json<-as.character(json[,1])
 
 for(i in json){
