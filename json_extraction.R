@@ -46,7 +46,7 @@ phylo<-rbind(phylo,x)
 
 }
 
-write.table(phylo,"/depot/bharpur/data/projects/slater/Phylo_MaleEvolution/Resources/Alignment/phylo")
+write.table(phylo,"/depot/bharpur/data/projects/slater/Phylo_MaleEvolution/Resources/Alignment/hyphy/Fel/phylo")
 
 
 
