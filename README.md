@@ -165,6 +165,11 @@ write.tree(pruned.tree,"/directory/pruned.tree")
 
 I ran FEL in HyPhy using the shell ```hyphy.sh```. The parameters were standandard, except I set the p-value to 0.1. The output with be in a file.json. 
 
+
+# Run dNds Analysis with Hyphy
+
+I ran the FitMG94 to get dN and dS estimates for each brannch using ```dnds.sh``. I ran this on my own computer because this was a new hyphy development.
+
 # Summarize Data
 
 I extracted the dNdS values for each gene using the R script ```json_extraction.R```. 
