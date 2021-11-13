@@ -168,7 +168,11 @@ I ran FEL in HyPhy using the shell ```hyphy.sh```. The parameters were standanda
 
 # Run dNds Analysis with Hyphy
 
-I ran the FitMG94 to get dN and dS estimates for each brannch using ```dnds.sh``. I ran this on my own computer because this was a new hyphy development.
+I ran the FitMG94 to get dN and dS estimates for each branch using ```dnds.sh``. I ran this on my own computer because this was a new hyphy development.
+
+# Run RELAX Analysis with Hyphy
+
+I ran the RELAX to get estimates relaxed selection for apis mellifera using ```relax.sh``. I had to make a new tree file to indicate both donor and reference branches. Because I was interested in relaxed selection in honey bees, apis mellifera was the donor branch and the other bees were the reference branch. I names it pruned_relax.tree
 
 # Summarize Data
 
