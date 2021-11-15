@@ -8,13 +8,13 @@ dnds<-matrix(nrow=0,ncol=16)
 colnames(dnds)<-c("protein_id","AMEL_dN","AMEL_dS","AMEL_dNdS","BIMP_dN","BIMP_dS","BIMP_dNdS","MROT_dN","MROT_dS","MROT_dNdS","TCARB_dN","TCARB_dS",
 "TCARB_dNdS","EDILL_dN","EDIL_dS","EDIL_dNdS")
 
-json<-read.table("/depot/bharpur/data/projects/slater/Phylo_MaleEvolution/Resources/Alignment/hyphy/dnds/json_3.txt")
+json<-read.table("/depot/bharpur/data/projects/slater/Phylo_MaleEvolution/Resources/Alignment/hyphy/dnds/json_4.txt")
 json<-as.character(json[,1])
 
 for(i in json){
   
   
-  attach<-"_aligned_3.fasta.FITTER.json"
+  attach<-"_aligned_4.fasta.FITTER.json"
   file<-gsub(" ", "", paste(i, attach))
   
   
@@ -68,5 +68,5 @@ for(i in json){
   
 }
 
-write.table(dnds,"/depot/bharpur/data/projects/slater/Phylo_MaleEvolution/Resources/Alignment/hyphy/dnds/dnds_3.txt")
+write.table(dnds,"/depot/bharpur/data/projects/slater/Phylo_MaleEvolution/Resources/Alignment/hyphy/dnds/dnds_4.txt")
 
