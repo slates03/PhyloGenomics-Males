@@ -12,13 +12,13 @@ pidlist_sampe=""
 cd /Users/garettslater/Desktop/hyphy
 
 k=$k
-endAfq="_aligned_3.fasta"
+endAfq="_aligned_4.fasta"
 TP1=$k$endAfq
 TPQ="/Users/garettslater/Desktop/Alignment/"
 TPP=$TPQ$TP1
 
 
-(echo $TPP; echo "/Users/garettslater/Desktop/pruned.tree")| ./HYPHYMP /Users/garettslater/Desktop/FitMG94/FitMG94.bf  
+(echo "/Users/garettslater/Desktop/pruned.tree")| ./HYPHYMP /Users/garettslater/Desktop/hyphy/FitMG94/FitMG94.bf --alignment $TPP --type local
 
 
 done
