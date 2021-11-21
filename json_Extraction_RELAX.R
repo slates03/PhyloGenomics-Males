@@ -17,8 +17,6 @@ for(i in json){
   file<-gsub(" ", "", paste(i, attach))
 
 
-file="XP_394396.2_aligned_3.fasta.RELAX.json"
-
   #Packages
   library(jsonlite)
   library(rjson)
