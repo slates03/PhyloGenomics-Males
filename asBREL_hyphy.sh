@@ -22,7 +22,7 @@ cd /depot/bharpur/data/projects/slater/Phylo_MaleEvolution/Resources/hyphy
 k=$k
 endAfq="_aligned_2.fasta"
 TP1=$k$endAfq
-TPQ="/depot/bharpur/data/projects/slater/Phylo_MaleEvolution/Resources/Alignment"
+TPQ="/depot/bharpur/data/projects/slater/Phylo_MaleEvolution/Resources/Alignment/"
 TPP=$TPQ$TP1
 
 
