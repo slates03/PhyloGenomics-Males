@@ -1,0 +1,101 @@
+###############
+#Step 1:Vast Align with DB
+##############
+
+   
+#!/bin/bash
+#FILENAME: Slater_HB_RNAseq
+#SBATCH -A lenders
+#SBATCH -n 1
+#SBATCH -t 75:00:00
+
+# load the modules
+	module load bioinfo
+	module load R
+	module load bowtie
+
+	cd /depot/bharpur/apps/vast-tools
+
+k=$1
+pidlist_sampe=""
+endfq="_1.fq.gz"
+endfq2="_2.fq.gz"
+fq1=$k$endfq
+fq2=$k$endfq2
+end="VASToutput_"
+end2=$end$k
+
+./vast-tools align /depot/bharpur/data/projects/slater/Phylo_MaleEvolution/RNASeq/TCARB_Male_RNAseq/$fq1 /depot/bharpur/data/projects/slater/Phylo_MaleEvolution/RNASeq/TCARB_Male_RNAseq/$fq2 -sp Tec --expr --expr $end2
+
+echo " "
+
+
+###############
+#Step 2: Differential Splicing
+##############
+
+
+module load bioinfo
+module load r
+module load bowtie
+
+#BIMP
+./vast-tools diff -a O184_1,Ovary,O273_1,O275_1,O281_1,O285_1,O291_1 -b Slater_BT50_S3_001_1,Slater_BT51_S2_001_1,Slater_BT52_S1_001_1 --sampleNameA=Ovary --sampleNameB=Testes
+
+#MROT
+./vast-tools diff -a MO2_1,MO4_1,MO5_1 -b Slater_MT50_S3_001_1,Slater_MT51_S2_001_1,Slater_MT52_S1_001_1 --sampleNameA=Ovary --sampleNameB=Testes
+
+#TCARB
+./vast-tools diff -a TO1_1,TO4_1 -b Slater_TeT52_S5_001_1,Slater_TeT53_S6_001_1,Slater_TeT54_S7_001_1,Slater_TeT55_S8_001_1 --sampleNameA=Ovary --sampleNameB=Testes
+
+#EDIL
+./vast-tools diff -a SRR8597120_1, SRR8597116_1,SRR8597149_1,SRR8597156_1,SRR8597161_1,SRR8597164_1 -b Slater_ET52_S1_001_1,Slater_ET50_S3_001_1 --sampleNameA=Ovary --sampleNameB=Testes
+
+#AMEL
+
+#EDIL
+./vast-tools diff -a Blencowe_QO1_S1_1_TP, Blencowe_QO2_S2_1_TP,Blencowe_QO3_S3_1_TP -b Blencowe_T5_S13_1_TP,Blencowe_T4_S12_1_TP,Blencowe_T3_S11_1_TP,Blencowe_T2_S10_1_TP,Blencowe_T1_S9_1_TP --sampleNameA=Ovary --sampleNameB=Testes
+
+
+
+
+
+
+###############
+#Step 3: Annotation file with Events and Gene Names
+##############
+
+awk '{ print $1 " " $2 }' INCLUSION_LEVELS_FULL-bomImp1-17.tab > BIMP_splicing.tab
+
+###############
+#Step 4: Annotation template.
+##############
+#Need Gene Name to Loci ID. THis is in the DB template folder
+
+/depot/bharpur/apps/vast-tools/VASTDB/Bim/TEMPLATES/Bim.ANNOT.Template.txt
+
+
+###############
+#Step 5: Combine and filter annotation file and annotation template 
+##############
+
+Annot<-read.csv("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/Bim_ANNOT.csv")
+Annot<-data.frame(Annot)
+Splicing_tab<-read.table("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/BIMP_splicing.tab",header=TRUE)
+Splicing_tab<-data.frame(Splicing_tab)
+x<-merge(Annot,Splicing_tab,by="GENE")
+colnames(x)<-c("gene","BIMP_gene_name","EVENT")
+xx<-merge(x,BIMP_Sample[[2]]$ortho)
+xx<-xx %>% select(gene,BIMP_protein_id,EVENT)
+xx<-xx%>%distinct(EVENT,.keep_all = TRUE)
+write.table(xx,"~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/Bim_ANNOT_splice.txt")
+
+
+
+
+
+
+
+
+
+
