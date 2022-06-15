@@ -1,0 +1,181 @@
+---
+title: "03_Figure2_Expression_Polyandry.rmd"
+author: "Garett Slater"
+date: "May 26 2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r knitr setup, include=FALSE,  eval=TRUE, echo=FALSE, warning=FALSE}
+library(knitr)
+knitr::opts_chunk$set(eval=TRUE, cache=FALSE, message=FALSE, warning=FALSE, 
+                      comment = "")
+```
+
+
+```{r, include=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Code")
+source("Polyandry_Evo_Functions_V2.R", local = knitr::knit_global())
+```
+
+```{r data}
+library(pacman)
+p_load(biomatRt,tximport,DESeq2,dplyr,plyranges,ggplot2,plyr,ggpubr,reshape2,UpSetR,tispec,tidyverse,rstatix,readxl,ape,geiger,nlme,phytools,ggpubr)
+
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources")
+load(file = "AMEL.RData")
+load(file = "BIMP.RData")
+load(file = "EDIL.RData")
+load(file = "MROT.RData")
+load(file = "TCARB.RData")
+
+LST_R_exp<-as.matrix(bind_rows(AMEL_final[[3]],BIMP_final[[3]],EDIL_final[[3]],MROT_final[[3]],TCARB_final[[3]])) 
+colnames(LST_R_exp)<-c("protein_id","MB","FB","UB","Bias","species")
+LST_R_exp<-data.frame(LST_R_exp)
+```
+
+```{r echo=FALSE}
+#Biased Expression
+#AMEL
+Sample<-AMEL_Sample[[1]]$Sample[which(AMEL_Sample[[1]]$Sample$Tissue_Type=="Gonadal"),]
+AMEL_tpm<-dosage_comp(Sample)
+AMEL_tpm<-merge(AMEL_tpm,Sample)
+AMEL_tpm = AMEL_tpm %>% group_by(target_id,Final) %>% dplyr::summarize(tpm=mean(tpm)); colnames(AMEL_tpm)[2]<-"Bias"
+AMEL_tpm_ub = AMEL_tpm %>% group_by(target_id) %>% dplyr::summarize(tpm=mean(tpm)) %>% mutate(Bias="UB")
+AMEL_tpm<-rbind(AMEL_tpm,AMEL_tpm_ub)
+AMEL_tpm<-merge(AMEL_tpm,AMEL_Sample[[2]]$ortho)
+AMEL_tpm<-dplyr::select(AMEL_tpm,protein_id,Bias,tpm)
+AMEL_tpm$species<-"AMEL"
+
+#BIMP
+Sample<-BIMP_Sample[[1]]$Sample[which(BIMP_Sample[[1]]$Sample$Tissue_Type=="Gonadal"),]
+BIMP_tpm<-dosage_comp(Sample)
+BIMP_tpm<-merge(BIMP_tpm,Sample)
+BIMP_tpm = BIMP_tpm %>% group_by(target_id,Final) %>% dplyr::summarize(tpm=mean(tpm)); colnames(BIMP_tpm)[2]<-"Bias"
+BIMP_tpm_ub = BIMP_tpm %>% group_by(target_id) %>% dplyr::summarize(tpm=mean(tpm)) %>% mutate(Bias="UB")
+BIMP_tpm<-rbind(BIMP_tpm,BIMP_tpm_ub)
+colnames(BIMP_tpm)[1]<-"BIMP_target_id"
+BIMP_tpm<-merge(BIMP_tpm,BIMP_Sample[[2]]$ortho)
+BIMP_tpm<-dplyr::select(BIMP_tpm,protein_id,Bias,tpm)
+BIMP_tpm$species<-"BIMP"
+
+#MROT
+Sample<-MROT_Sample[[1]]$Sample[which(MROT_Sample[[1]]$Sample$Tissue_Type=="Gonadal"),]
+MROT_tpm<-dosage_comp(Sample)
+MROT_tpm<-merge(MROT_tpm,Sample)
+MROT_tpm = MROT_tpm %>% group_by(target_id,Final) %>% dplyr::summarize(tpm=mean(tpm)); colnames(MROT_tpm)[2]<-"Bias"
+MROT_tpm_ub = MROT_tpm %>% group_by(target_id) %>% dplyr::summarize(tpm=mean(tpm)) %>% mutate(Bias="UB")
+MROT_tpm<-rbind(MROT_tpm,MROT_tpm_ub)
+colnames(MROT_tpm)[1]<-"MROT_target_id"
+MROT_tpm<-merge(MROT_tpm,MROT_Sample[[2]]$ortho)
+MROT_tpm<-dplyr::select(MROT_tpm,protein_id,Bias,tpm)
+MROT_tpm$species<-"MROT"
+
+#EDIL
+Sample<-EDIL_Sample[[1]]$Sample[which(EDIL_Sample[[1]]$Sample$Tissue_Type=="Gonadal"),]
+EDIL_tpm<-dosage_comp(Sample)
+EDIL_tpm<-merge(EDIL_tpm,Sample)
+EDIL_tpm = EDIL_tpm %>% group_by(target_id,Final) %>% dplyr::summarize(tpm=mean(tpm)); colnames(EDIL_tpm)[2]<-"Bias"
+EDIL_tpm_ub = EDIL_tpm %>% group_by(target_id) %>% dplyr::summarize(tpm=mean(tpm)) %>% mutate(Bias="UB")
+EDIL_tpm<-rbind(EDIL_tpm,EDIL_tpm_ub)
+colnames(EDIL_tpm)[1]<-"EDIL_target_id"
+EDIL_tpm<-merge(EDIL_tpm,EDIL_Sample[[2]]$ortho)
+EDIL_tpm<-dplyr::select(EDIL_tpm,protein_id,Bias,tpm)
+EDIL_tpm$species<-"EDIL"
+
+#TCARB
+Sample<-TCARB_Sample[[1]]$Sample[which(TCARB_Sample[[1]]$Sample$Tissue_Type=="Gonadal"),]
+TCARB_tpm<-dosage_comp(Sample)
+TCARB_tpm<-merge(TCARB_tpm,Sample)
+TCARB_tpm = TCARB_tpm %>% group_by(target_id,Final) %>% dplyr::summarize(tpm=mean(tpm)); colnames(TCARB_tpm)[2]<-"Bias"
+TCARB_tpm_ub = TCARB_tpm %>% group_by(target_id) %>% dplyr::summarize(tpm=mean(tpm)) %>% mutate(Bias="UB")
+TCARB_tpm<-rbind(TCARB_tpm,TCARB_tpm_ub)
+colnames(TCARB_tpm)[1]<-"TCARB_protein_id"
+TCARB_tpm<-merge(TCARB_tpm,TCARB_Sample[[2]]$ortho)
+TCARB_tpm<-dplyr::select(TCARB_tpm,protein_id,Bias,tpm)
+TCARB_tpm$species<-"TCARB"
+
+#Final
+tpm<-rbind(AMEL_tpm,BIMP_tpm,EDIL_tpm,MROT_tpm,TCARB_tpm)
+AMELx<-LST_R_exp[which(LST_R_exp$species=="AMEL"),]
+tpm<-merge(tpm,AMELx,by=c("protein_id","Bias"))
+tpm<-tpm[which(tpm$tpm>0),]
+```
+
+# Figure 2A - Sperm Length and MaleBiased Expression
+```{r echo=FALSE}
+Species<-c("GEN_apis_mellifera","GEN_bombus_impatiens","TR_tetragonula_carbonaria","TR_euglossa_dilemma","GEN_megachile_rotundata")
+Sperm<-c(255,168,80,720,80)
+Mating<-c(14,1,1,1,1)
+conflict<-c(548,120,50,292,110)
+MB<-c(0.587,0.573,0.543,0.622,0.537)
+data <- data.frame(Species, Sperm,Mating, conflict,MB)
+rm(list=(c("Species", "Mating", "conflict","MB")))
+
+
+ggplot(data=data, aes(x=Sperm, y=MB, group=1)) +
+  geom_point()+geom_smooth(method='lm',se = FALSE)
+
+
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+pdf(file = "Figure2A-SpermLength_MaleBiasedExpression.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+regression(data,"Sperm Length","MaleBiased Expression","Sperm Length and Male Biased Expression",data$Sperm,data$MB)
+dev.off()
+regression(data,"Sperm Length","MaleBiased Expression","Sperm Length and Male Biased Expression",data$Sperm,data$MB)
+
+
+beeTree <- read.tree("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/pruned.tree")
+pglsModel <- gls(MB ~ Sperm, correlation = corBrownian(1, phy = beeTree,form=~Species),data = data, method = "ML")
+anova(pglsModel)
+```
+
+# Figure 2B - Sperm Length and Expression
+```{r echo=FALSE}
+Species<-c("GEN_apis_mellifera","GEN_bombus_impatiens","TR_tetragonula_carbonaria","TR_euglossa_dilemma","GEN_megachile_rotundata")
+Sperm<-c(255,168,80,720,80)
+EXP<-c(237.75,146.35,139.01,352.32,147.06)
+data <- data.frame(Species, Sperm,EXP)
+rm(list=(c("Species", "Sperm", "EXP")))
+
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+pdf(file = "Figure2B-SpermLength_ExpressonTPM.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+regression(data,"Sperm Length","MaleBiased Expression","Sperm Length and Male Biased Expression",data$Sperm,data$EXP)
+dev.off()
+regression(data,"Sperm Length","MaleBiased Expression","Sperm Length and Male Biased Expression",data$Sperm,data$EXP)
+
+
+beeTree <- read.tree("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/pruned.tree")
+pglsModel <- gls(EXP ~ Sperm, correlation = corBrownian(1, phy = beeTree,form=~Species),data = data, method = "ML")
+anova(pglsModel)
+```
+
+
+# Figure 2C-Expression and Bias Class
+```{r echo=FALSE}
+#Graphic
+sum <- tpm %>% group_by(Bias,species.x) %>% dplyr::summarize(mean=mean(tpm),sd=sd(tpm),N=length(tpm),se=sd/sqrt(N))
+
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+pdf(file = "Figure2C-Expression.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+graph_tissue(sum,"Species","tpm",0,500,"title",c("AMEL","BIMP","EDIL","MROT",'TCARB'),sum$species.x,sum$mean,sum$Bias)
+dev.off()
+graph_tissue(sum,"Species","tpm",0,500,"title",c("AMEL","BIMP","EDIL","MROT",'TCARB'),sum$species.x,sum$mean,sum$Bias)
+
+
+x<-tpm[which(tpm$Bias=="MG"),]
+res.aov <- aov(tpm ~ species.x, data = x)
+summary(res.aov)
+TukeyHSD(res.aov)
+
+x<-tpm[which(tpm$species.x=="MROT"),]
+res.aov <- aov(tpm ~ Bias, data = x)
+summary(res.aov)
+TukeyHSD(res.aov)
+```

@@ -1,0 +1,153 @@
+---
+title: "01a_AMEL_DataInput_Polyandry.rmd"
+author: "Garett Slater"
+date: "May 26 2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r knitr setup, include=FALSE,  eval=TRUE, echo=FALSE, warning=FALSE}
+library(knitr)
+knitr::opts_chunk$set(eval=TRUE, cache=FALSE, message=FALSE, warning=FALSE, 
+                      comment = "")
+```
+
+
+```{r, include=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Code")
+source("Polyandry_Evo_Functions_V2.R", local = knitr::knit_global())
+# or sys.source("your-script.R", envir = knitr::knit_global())
+```
+
+
+# Data Input
+```{r data}
+########################################
+##                                    ##       
+##        Resource Files              ##
+##                                    ## 
+########################################
+library(pacman)
+p_load(biomatRt,tximport,DESeq2,dplyr,plyranges,ggplot2,plyr,ggpubr,reshape2,UpSetR,tispec,tidyverse,rstatix,readxl)
+
+########################################
+##                                    ##       
+## 1. Gene Datasets and Figure 1A     ##
+##                                    ## 
+########################################
+########################################
+##               AMEL                 ##
+########################################
+#Description Files
+AMEL_Sample = vector(mode = "list",length=3)
+AMEL_Sample[[1]]$Sample<-read.csv("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/AMEL_samp.csv")
+AMEL_Sample[[2]]$ortho<-read.csv("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/AMEL_ortho.csv")
+AMEL_Sample[[3]]$tx2gene<-read.csv("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/AMEL_tx2gene.csv")
+```
+
+
+# Gene Expression, Kallisto, and DESEq analysis
+```{r echo=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Abundance")
+
+#DESeq Analysis
+#Run kallisto with Final (Tissue Type) as design and a count cutoff of 10
+AMEL_final = vector(mode = "list", length = 4)
+
+#Gonadal
+Sample<-AMEL_Sample[[1]]$Sample[which(AMEL_Sample[[1]]$Sample$Tissue_Type=="Gonadal"),]
+dds<-kallisto(Sample,AMEL_Sample[[3]]$tx2gene,Type=~Final)
+AMEL_final[[1]]$Gonadal<-contrast("Final","MG","FG","AMEL_")
+```
+
+# Gonadal Non-Ortho
+```{r echo=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+AMEL_final[[1]]$Gonadal$Bias[AMEL_final[[1]]$Gonadal$MB == 1]<-"MG"
+AMEL_final[[1]]$Gonadal$Bias[AMEL_final[[1]]$Gonadal$FB == 1]<-"FG"
+AMEL_final[[1]]$Gonadal$species<-"AMEL"
+
+
+pdf(file = "1-AMEL-UpsetPlot-Gonadal.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+upset(AMEL_final[[1]]$Gonadal[,2:3],order.by=c("freq"))
+dev.off()
+upset(AMEL_final[[1]]$Gonadal[,2:3],order.by=c("freq"))
+```
+
+# Gonadal Ortho
+```{r echo=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+#Gondal-Ortho Only
+AMEL_final[[3]]$Gonadal_Ortho = merge(AMEL_Sample[[2]]$ortho, AMEL_final[[1]]$Gonadal,by="AMEL_protein_id",all=TRUE)
+AMEL_final[[3]]$Gonadal_Ortho<-AMEL_final[[3]]$Gonadal_Ortho %>%
+  mutate(across(everything(), ~ ifelse(is.na(.), 0, .)))  %>%
+  mutate(UB=ifelse(MB+FB==0,1,0))%>%
+  filter(protein_id!=0) %>%
+  select(protein_id,MB,FB,UB)
+
+AMEL_final[[3]]$Gonadal_Ortho$Bias[AMEL_final[[3]]$Gonadal_Ortho$MB == 1]<-"MG"
+AMEL_final[[3]]$Gonadal_Ortho$Bias[AMEL_final[[3]]$Gonadal_Ortho$FB == 1]<-"FG"
+AMEL_final[[3]]$Gonadal_Ortho$Bias[AMEL_final[[3]]$Gonadal_Ortho$UB == 1]<-"UB"
+AMEL_final[[3]]$Gonadal_Ortho$species<-"AMEL"
+
+pdf(file = "1-AMEL-UpsetPlot-GonadalOrtho.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+upset(AMEL_final[[3]]$Gonadal_Ortho[,2:4],order.by=c("freq"))
+dev.off()
+upset(AMEL_final[[3]]$Gonadal_Ortho[,2:4],order.by=c("freq"))
+```
+
+
+```{r echo=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Abundance")
+#Somatic - Kallisto function and then contrast function
+Sample<-AMEL_Sample[[1]]$Sample[which(AMEL_Sample[[1]]$Sample$Tissue_Type=="Somatic"),]
+dds<-kallisto(Sample,AMEL_Sample[[3]]$tx2gene,Type=~Final)
+AMEL_final[[2]]$Somatic<-contrast("Final","MS","FS","AMEL_")
+
+AMEL_final[[2]]$Somatic$Bias[AMEL_final[[2]]$Somatic$MB == 2]<-"MS"
+AMEL_final[[2]]$Somatic$Bias[AMEL_final[[2]]$Somatic$FB == 2]<-"FS"
+AMEL_final[[2]]$Somatic$species<-"AMEL"
+```
+
+# Somatic
+```{r echo=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+pdf(file = "1-AMEL-UpsetPlot-Somatic.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+upset(AMEL_final[[2]]$Somatic[,2:3],order.by=c("freq"))
+dev.off()
+upset(AMEL_final[[2]]$Somatic[,2:3],order.by=c("freq"))
+```
+
+# Somatic Ortho
+```{r echo=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+#Somatic-Ortho Only
+AMEL_final[[4]]$Somatic_Ortho = merge(AMEL_Sample[[2]]$ortho, AMEL_final[[2]]$Somatic,by="AMEL_protein_id",all=TRUE)
+AMEL_final[[4]]$Somatic_Ortho<-AMEL_final[[4]]$Somatic_Ortho %>%
+  mutate(across(everything(), ~ ifelse(is.na(.), 0, .)))  %>%
+  mutate(UB=ifelse(MB+FB==0,1,0)) %>%
+  filter(protein_id!=0) %>%
+  select(protein_id,MB,FB,UB)
+
+AMEL_final[[4]]$Somatic_Ortho$Bias[AMEL_final[[4]]$Somatic_Ortho$MB == 1]<-"MS"
+AMEL_final[[4]]$Somatic_Ortho$Bias[AMEL_final[[4]]$Somatic_Ortho$FB == 1]<-"FS"
+AMEL_final[[4]]$Somatic_Ortho$Bias[AMEL_final[[4]]$Somatic_Ortho$UB == 1]<-"UB"
+AMEL_final[[4]]$Somatic_Ortho$species<-"AMEL"
+
+pdf(file = "1-AMEL-UpsetPlot-SomaticOrtho.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+upset(AMEL_final[[4]]$Somatic_Ortho[,2:4],order.by=c("freq"))
+dev.off()
+upset(AMEL_final[[4]]$Somatic_Ortho[,2:4],order.by=c("freq"))
+
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources")
+save(AMEL_final,AMEL_Sample,file = "AMEL.RData")
+```
