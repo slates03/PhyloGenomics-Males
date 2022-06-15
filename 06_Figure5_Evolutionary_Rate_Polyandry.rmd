@@ -1,0 +1,143 @@
+---
+title: "06_Figure5_Evolutionary_Rate_Polyandry.rmd"
+author: "Garett Slater"
+date: "May 26 2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r knitr setup, include=FALSE,  eval=TRUE, echo=FALSE, warning=FALSE}
+library(knitr)
+knitr::opts_chunk$set(eval=TRUE, cache=FALSE, message=FALSE, warning=FALSE, 
+                      comment = "")
+```
+
+```{r, include=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Code")
+source("Polyandry_Evo_Functions_V2.R", local = knitr::knit_global())
+```
+
+
+```{r data}
+library(pacman)
+p_load(biomatRt,tximport,DESeq2,dplyr,plyranges,ggplot2,plyr,ggpubr,reshape2,UpSetR,tispec,tidyverse,rstatix,readxl,ape,geiger,nlme,phytools,ggpubr)
+
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources")
+load(file = "AMEL.RData")
+load(file = "BIMP.RData")
+load(file = "EDIL.RData")
+load(file = "MROT.RData")
+load(file = "TCARB.RData")
+
+LST_R_exp<-as.matrix(bind_rows(AMEL_final[[3]],BIMP_final[[3]],EDIL_final[[3]],MROT_final[[3]],TCARB_final[[3]])) 
+colnames(LST_R_exp)<-c("protein_id","MB","FB","UB","Bias","species")
+LST_R_exp<-data.frame(LST_R_exp)
+
+#dNdS Graphic
+SF_proteome<-read.csv("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/SF_proteome.csv")
+GB_GBold<-read.table("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/GB_GBold",header=TRUE)
+#dNdS
+dnds<-read.table("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/ASBREL_DNDS")
+dnds<-dnds[which(dnds$dnds<10),] #Remove estimates below 5
+GB_to_NCBI<-read.csv("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/GB_to_NCBI.csv")
+```
+
+# Table 1: Evolutionary Metrics
+```{r echo=FALSE}
+Evol_metrics<-read.table("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/Amell_Apoidea_og_metrics.tsv",header=TRUE)
+GB_to_NCBI<-read.csv("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/GB_to_NCBI.csv")
+
+#Ortho
+evol_bias<-merge(AMEL_Sample[[3]]$tx2gene,LST_R_exp,by="protein_id")
+evol_bias<-merge(evol_bias,GB_to_NCBI,by="target_id")
+evol_bias<-merge(evol_bias,Evol_metrics,by="GB")
+evol_bias<-evol_bias[!duplicated(evol_bias$GB), ]
+
+#EXP:Expansion
+#Con:Contraction
+#CNV: Copy Number Variants
+#DUP: Duplicity
+evol_bias %>% group_by(Bias) %>% dplyr::summarize(mean=mean(CON),sd=sd(CON),N=length(CON),se=sd/sqrt(N),na.rm=TRUE)
+
+res.aov <- aov(DUP ~ Bias , data = evol_bias)
+summary(res.aov)
+TukeyHSD(res.aov)
+
+#COntraction
+sum = evol_bias[!is.na(evol_bias$CON), ] %>% group_by(Bias) %>% dplyr::summarize(mean=mean(CON),sd=sd(CON),N=length(CON),se=sd/sqrt(N),na.rm=TRUE)
+sp1<-graph_all(sum,"Group","CON",0,.8,"CON",c("FB","MG","UB"),sum$Bias,sum$mean)
+
+#Expansion
+sum = evol_bias[!is.na(evol_bias$EXP), ] %>% group_by(Bias) %>% dplyr::summarize(mean=mean(EXP),sd=sd(EXP),N=length(EXP),se=sd/sqrt(N),na.rm=TRUE)
+sp2<-graph_all(sum,"Group","EXP",0,.3,"EXP",c("FB","MG","UB"),sum$Bias,sum$mean)
+
+#Duplicity
+sum = evol_bias[!is.na(evol_bias$DUP), ] %>% group_by(Bias) %>% dplyr::summarize(mean=mean(DUP),sd=sd(DUP),N=length(DUP),se=sd/sqrt(N),na.rm=TRUE)
+sp3<-graph_all(sum,"Group","DUP",0,.12,"DUP",c("FB","MG","UB"),sum$Bias,sum$mean)
+
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+pdf(file = "Figure5-Bias_EvolutionaryRates.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+ggarrange(sp1,sp2,sp3,nrow=1,ncol=3)
+dev.off()
+ggarrange(sp1,sp2,sp3,nrow=1,ncol=3)
+```
+
+# Figure 6
+```{r echo=FALSE}
+####################################################
+##       Figure 6: Evolutionary Metrics           ##
+####################################################
+
+SF<-merge(SF_proteome,GB_GBold,by="GBold")
+SF<-merge(SF,GB_to_NCBI,by="GB")
+SF<-merge(SF,AMEL_Sample[[3]]$tx2gene,by="target_id")
+SF_ortho<-merge(SF,AMEL_Sample[[2]]$ortho,by="protein_id")
+SF_evo<-dplyr::select(SF_ortho,protein_id)
+SF_ortho<-merge(SF_ortho,dnds,by="protein_id")
+
+#Jitter Plot of Seminal Fluid Proteins
+SF_ortho<-dplyr::select(SF_ortho,protein_id,dnds,species)
+ggplot(SF_ortho, aes(x=SF_ortho$species, y=SF_ortho$dnds)) + 
+  geom_violin(trim=FALSE)+
+  geom_jitter(shape=16, position=position_jitter(0.05),size=3) 
+
+
+#Evolutionary Rates and Seminal Fluids
+SF2<-merge(SF,Evol_metrics,by="GB")
+SF2$group<-"SF"
+
+non_SF<-merge(SF,Evol_metrics,by="GB",all=TRUE)
+non_SF <- non_SF[is.na(non_SF$GBold),]
+non_SF$group<-"non_SF"
+SF_evo<-rbind(SF2,non_SF)
+
+#COntraction
+sum = SF_evo[!is.na(SF_evo$CON), ] %>% group_by(group) %>% dplyr::summarize(mean=mean(CON),sd=sd(CON),N=length(CON),se=sd/sqrt(N),na.rm=TRUE)
+sp1<-graph_all(sum,"Group","CON",0,2,"CON",c("Global","SF"),sum$group,sum$mean)
+
+#Expansion
+sum = SF_evo[!is.na(SF_evo$EXP), ] %>% group_by(group) %>% dplyr::summarize(mean=mean(EXP),sd=sd(EXP),N=length(EXP),se=sd/sqrt(N),na.rm=TRUE)
+sp2<-graph_all(sum,"Group","EXP",0,0.3,"EXP",c("Global","SF"),sum$group,sum$mean)
+
+#Duplicity
+sum = SF_evo[!is.na(SF_evo$DUP), ] %>% group_by(group) %>% dplyr::summarize(mean=mean(DUP),sd=sd(DUP),N=length(DUP),se=sd/sqrt(N),na.rm=TRUE)
+sp3<-graph_all(sum,"Group","DUP",0,.12,"DUP",c("Global","SF"),sum$group,sum$mean)
+
+
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+pdf(file = "Figure5-Bias_EvolutionaryRates_SeminalFluids.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+ggarrange(sp1,sp2,sp3,nrow=1,ncol=3)
+dev.off()
+ggarrange(sp1,sp2,sp3,nrow=1,ncol=3)
+
+#Statistics
+res.aov <- aov(EXP ~ group, data = SF_evo)
+summary(res.aov)
+TukeyHSD(res.aov)
+```
+

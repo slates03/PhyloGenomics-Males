@@ -1,0 +1,151 @@
+---
+title: "01c_EDIL_DataInput_Polyandry.rmd"
+author: "Garett Slater"
+date: "May 26 2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r knitr setup, include=FALSE,  eval=TRUE, echo=FALSE, warning=FALSE}
+library(knitr)
+knitr::opts_chunk$set(eval=TRUE, cache=FALSE, message=FALSE, warning=FALSE, 
+                      comment = "")
+```
+
+
+```{r, include=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Code")
+source("Polyandry_Evo_Functions_V2.R", local = knitr::knit_global())
+```
+
+
+# Data Input
+```{r data}
+########################################
+##                                    ##       
+##        Resource Files              ##
+##                                    ## 
+########################################
+library(pacman)
+p_load(biomatRt,tximport,DESeq2,dplyr,plyranges,ggplot2,plyr,ggpubr,reshape2,UpSetR,tispec,tidyverse,rstatix,readxl)
+
+#Function Classes
+func<-read.csv("~/OneDrive/Projects/Experimental Protocols/Bioinformatics/Proteomics/drone_function_final.csv")
+
+########################################
+##                                    ##       
+## 1. Gene Datasets and Figure 1A     ##
+##                                    ## 
+########################################
+########################################
+##               BIMP                 ##
+########################################
+#Description Files
+EDIL_Sample = vector(mode = "list",length=3)
+EDIL_Sample[[1]]$Sample<-read.csv("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/EDIL_samp.csv")
+EDIL_Sample[[2]]$ortho<-read.csv("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/EDIL_ortho.csv")
+EDIL_Sample[[3]]$tx2gene<-read.csv("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/EDIL_tx2gene.csv")
+```
+
+# Gene Expression, Kallisto, and DESEq analysis
+```{r echo=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Abundance")
+#DESeq Analysis
+#Run kallisto with Final (Tissue Type) as design and a count cutoff of 10
+EDIL_final = vector(mode = "list", length = 4)
+
+#Gondal
+Sample<-EDIL_Sample[[1]]$Sample[which(EDIL_Sample[[1]]$Sample$Tissue_Type=="Gonadal"),]
+dds<-kallisto(Sample,EDIL_Sample[[3]]$tx2gene,Type=~Final)
+EDIL_final[[1]]$Gonadal<-contrast("Final","MG","FG","EDIL_")
+```
+
+# Gonadal Upset
+```{r echo=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+EDIL_final[[1]]$Gonadal$Bias[EDIL_final[[1]]$Gonadal$MB == 1]<-"MG"
+EDIL_final[[1]]$Gonadal$Bias[EDIL_final[[1]]$Gonadal$FB == 1]<-"FG"
+EDIL_final[[1]]$Gonadal$species<-"EDIL"
+
+pdf(file = "1-EDIL-UpsetPlot-Gonadal.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+upset(EDIL_final[[1]]$Gonadal[,2:3],order.by=c("freq"))
+dev.off()
+upset(EDIL_final[[1]]$Gonadal[,2:3],order.by=c("freq"))
+```
+
+# Gonadal Ortho Upset
+```{r echo=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+#Gondal-Ortho Only
+EDIL_final[[3]]$Gonadal_Ortho = merge(EDIL_Sample[[2]]$ortho, EDIL_final[[1]]$Gonadal,by="EDIL_protein_id",all=TRUE)
+EDIL_final[[3]]$Gonadal_Ortho<-EDIL_final[[3]]$Gonadal_Ortho %>%
+  mutate(across(everything(), ~ ifelse(is.na(.), 0, .)))  %>%
+  mutate(UB=ifelse(MB+FB==0,1,0))%>%
+  filter(protein_id!=0) %>%
+  select(protein_id,MB,FB,UB)
+
+EDIL_final[[3]]$Gonadal_Ortho$Bias[EDIL_final[[3]]$Gonadal_Ortho$MB == 1]<-"MG"
+EDIL_final[[3]]$Gonadal_Ortho$Bias[EDIL_final[[3]]$Gonadal_Ortho$FB == 1]<-"FG"
+EDIL_final[[3]]$Gonadal_Ortho$Bias[EDIL_final[[3]]$Gonadal_Ortho$UB == 1]<-"UB"
+EDIL_final[[3]]$Gonadal_Ortho$species<-"EDIL"
+
+pdf(file = "1-EDIL-UpsetPlot-GonadalOrtho.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+upset(EDIL_final[[3]]$Gonadal_Ortho[,2:4],order.by=c("freq"))
+dev.off()
+upset(EDIL_final[[3]]$Gonadal_Ortho[,2:4],order.by=c("freq"))
+```
+
+```{r echo=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Abundance")
+#Somatic - Kallisto function and then contrast function
+Sample<-EDIL_Sample[[1]]$Sample[which(EDIL_Sample[[1]]$Sample$Tissue_Type=="Somatic"),]
+dds<-kallisto(Sample,EDIL_Sample[[3]]$tx2gene,Type=~Final)
+EDIL_final[[2]]$Somatic<-contrast("Final","MS","FS","EDIL_")
+```
+
+# Somatic Upset
+```{r echo=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+EDIL_final[[2]]$Somatic$Bias[EDIL_final[[2]]$Somatic$MB == 2]<-"MS"
+EDIL_final[[2]]$Somatic$Bias[EDIL_final[[2]]$Somatic$FB == 2]<-"FS"
+EDIL_final[[2]]$Somatic$species<-"EDIL"
+
+pdf(file = "1-EDIL-UpsetPlot-Somatic.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+upset(EDIL_final[[2]]$Somatic[,2:3],order.by=c("freq"))
+dev.off()
+upset(EDIL_final[[2]]$Somatic[,2:3],order.by=c("freq"))
+```
+
+# Somatic Ortho Upset
+```{r echo=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+#Somatic-Ortho Only
+EDIL_final[[4]]$Somatic_Ortho = merge(EDIL_Sample[[2]]$ortho, EDIL_final[[2]]$Somatic,by="EDIL_protein_id",all=TRUE)
+EDIL_final[[4]]$Somatic_Ortho<-EDIL_final[[4]]$Somatic_Ortho %>%
+  mutate(across(everything(), ~ ifelse(is.na(.), 0, .)))  %>%
+  mutate(UB=ifelse(MB+FB==0,1,0)) %>%
+  filter(protein_id!=0) %>%
+  select(protein_id,MB,FB,UB)
+
+EDIL_final[[4]]$Somatic_Ortho$Bias[EDIL_final[[4]]$Somatic_Ortho$MB == 1]<-"MS"
+EDIL_final[[4]]$Somatic_Ortho$Bias[EDIL_final[[4]]$Somatic_Ortho$FB == 1]<-"FS"
+EDIL_final[[4]]$Somatic_Ortho$Bias[EDIL_final[[4]]$Somatic_Ortho$UB == 1]<-"UB"
+EDIL_final[[4]]$Somatic_Ortho$species<-"EDIL"
+
+pdf(file = "1-EDIL-UpsetPlot-SomaticOrtho.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+upset(EDIL_final[[4]]$Somatic_Ortho[,2:4],order.by=c("freq"))
+dev.off()
+upset(EDIL_final[[4]]$Somatic_Ortho[,2:4],order.by=c("freq"))
+
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources")
+save(EDIL_final,EDIL_Sample,file = "EDIL.RData")
+```

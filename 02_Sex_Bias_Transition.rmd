@@ -1,0 +1,195 @@
+---
+title: "02_Sex_Bias_Transition_Polyandry.rmd"
+author: "Garett Slater"
+date: "May 26 2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r knitr setup, include=FALSE,  eval=TRUE, echo=FALSE, warning=FALSE}
+library(knitr)
+knitr::opts_chunk$set(eval=TRUE, cache=FALSE, message=FALSE, warning=FALSE, 
+                      comment = "")
+```
+
+
+```{r, include=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Code")
+source("Polyandry_Evo_Functions_V2.R", local = knitr::knit_global())
+```
+
+```{r data}
+####################################################
+##  Combined Gene-sets for analysis             ##
+####################################################
+library(pacman)
+p_load(biomatRt,tximport,DESeq2,dplyr,plyranges,ggplot2,plyr,ggpubr,reshape2,UpSetR,tispec,tidyverse,rstatix,readxl)
+
+#Load expression fies
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources")
+load(file = "AMEL.RData")
+load(file = "BIMP.RData")
+load(file = "EDIL.RData")
+load(file = "MROT.RData")
+load(file = "TCARB.RData")
+
+#Transform data to just orthologs
+LST_R_exp<-as.matrix(bind_rows(AMEL_final[[3]],BIMP_final[[3]],EDIL_final[[3]],MROT_final[[3]],TCARB_final[[3]])) 
+colnames(LST_R_exp)<-c("protein_id","MB","FB","UB","Bias","species")
+LST_R_exp<-data.frame(LST_R_exp)
+```
+
+
+```{r echo=FALSE}
+#AMEL
+AM_R<-data.frame(AMEL_final[[3]]); AM_R<-AM_R[,1:3]; colnames(AM_R)<-c("protein_id","HBFG","HBMG")
+
+#BIMP
+BB_R<-data.frame(BIMP_final[[3]]); BB_R<-BB_R[,1:3]; colnames(BB_R)<-c("protein_id","BBFG","BBMG")
+
+#TCARB
+TC_R<-data.frame(TCARB_final[[3]]); TC_R<-TC_R[,1:3]; colnames(TC_R)<-c("protein_id","TCFG","TCMG")
+
+#MROT
+MR_R<-data.frame(MROT_final[[3]]); MR_R<-MR_R[,1:3]; colnames(MR_R)<-c("protein_id","MRFG","MRMG")
+
+#EDIL
+ED_R<-data.frame(EDIL_final[[3]]); ED_R<-ED_R[,1:3]; colnames(ED_R)<-c("protein_id","EDFG","EDMG")
+
+#All Merge
+CSB_R<-merge(AM_R,TC_R,by="protein_id")
+CSB_R<-merge(CSB_R,MR_R,by="protein_id")
+CSB_R<-merge(CSB_R,ED_R,by="protein_id")
+CSB_R<-merge(CSB_R,BB_R,by="protein_id")
+```
+
+
+```{r echo=FALSE}
+########################################
+##                                    ##       
+##    Lineage Specific Transition     ##
+##                                    ## 
+########################################
+#AMEL
+AM_R1=am_R()
+
+#BIMP
+BP_R1=bp_R()
+
+#TCARB
+TC_R1=tc_R()
+
+#MROT
+MR_R1=mr_R()
+
+#EDIL
+ED_R1=ed_R()
+
+LST_R<-rbind(AM_R1,ED_R1,TC_R1,MR_R1,BP_R1)
+
+#Sexual Conflict Table
+Sexual_Conflict<-LST_R%>%group_by(Species,Transition)%>%dplyr::summarise(N=length(Transition))
+write.csv(Sexual_Conflict,"~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/Sexual_Conflict.csv")
+```
+
+
+```{r echo=FALSE}
+##########
+## Clade-Wide SexBias
+##########
+#Testis
+CSB_2_Ts<-transition_R(1,1,1,1,1,0,0,0,0,0)
+
+#Ovary
+CSB_2_Ov<-transition_R(0,0,0,0,0,1,1,1,1,1)
+
+#Unbiased
+CSB_2_UB<-transition_R(0,0,0,0,0,0,0,0,0,0)
+
+```
+
+```{r echo=FALSE}
+##########
+## Chi squared analysis
+##########
+
+##BB
+matrix<-matrix(c(440,560,790,210),ncol=2,byrow = TRUE)
+colnames(matrix) <- c("cont","trt")
+rownames(matrix) <- c("HB","other")
+matrix <- as.table(matrix)
+chisq.test(matrix)
+
+##MROT
+matrix<-matrix(c(440,560,760,240),ncol=2,byrow = TRUE)
+colnames(matrix) <- c("cont","trt")
+rownames(matrix) <- c("HB","other")
+matrix <- as.table(matrix)
+chisq.test(matrix)
+
+##TCARB
+matrix<-matrix(c(440,560,820,180),ncol=2,byrow = TRUE)
+colnames(matrix) <- c("cont","trt")
+rownames(matrix) <- c("HB","other")
+matrix <- as.table(matrix)
+chisq.test(matrix)
+
+##EDIL
+matrix<-matrix(c(440,560,172,828),ncol=2,byrow = TRUE)
+colnames(matrix) <- c("cont","trt")
+rownames(matrix) <- c("HB","other")
+matrix <- as.table(matrix)
+chisq.test(matrix)
+
+##Unbiased VS Male-gonadal Bias
+matrix<-matrix(c(440,560,972,28),ncol=2,byrow = TRUE)
+colnames(matrix) <- c("cont","trt")
+rownames(matrix) <- c("HB","other")
+matrix <- as.table(matrix)
+chisq.test(matrix)
+
+##Unbiased VS Femle-gonadal Bias
+matrix<-matrix(c(440,560,915,85),ncol=2,byrow = TRUE)
+colnames(matrix) <- c("cont","trt")
+rownames(matrix) <- c("HB","other")
+matrix <- as.table(matrix)
+chisq.test(matrix)
+```
+
+# Figure 1C-Expression Correlation
+```{r echo=FALSE}
+##HB versus BIMP   
+CSB_HBT<-CSB_R[,c(1,2,3,10,11)]
+CSB_HBT_MG <- subset(CSB_HBT,CSB_HBT$HBMG==1 & CSB_HBT$BBMG==1 )
+CSB_HBT_FG <- subset(CSB_HBT,CSB_HBT$HBFG==1 & CSB_HBT$BBFG==1 )
+CSB_HBT_UB <- subset(CSB_HBT,CSB_HBT$HBFG==0  & CSB_HBT$HBMG==0 &CSB_HBT$BBFG==0 &CSB_HBT$BBMG==0 )
+
+
+#HB,BIMP,TCARB  
+CSB_HBTE<-CSB_R[,c(1,2,3,4,5,10,11)]
+CSB_HBTE_MG <- subset(CSB_HBTE,CSB_HBTE$HBMG==1 & CSB_HBTE$TCMG==1 & CSB_HBTE$BBMG==1)
+CSB_HBTE_FG <- subset(CSB_HBTE,CSB_HBTE$HBFG==1 & CSB_HBTE$TCFG==1 & CSB_HBTE$BBFG==1)
+CSB_HBTE_UB <- subset(CSB_HBTE,CSB_HBTE$HBFG==0 & CSB_HBTE$HBMG==0 & CSB_HBTE$TCFG==0 &  CSB_HBTE$TCMG==0 & CSB_HBTE$BBFG==0 & CSB_HBTE$BBMG==0)
+
+##HB,TCARB,BIMP &EDIL          
+CSB_HBTEM<-CSB_R[,c(1,2,3,4,5,8,9,10,11)]
+CSB_HBTEM_MG <- subset(CSB_HBTEM,CSB_HBTEM$HBMG==1 & CSB_HBTEM$TCMG==1 & CSB_HBTEM$EDMG==1 & CSB_HBTEM$BBMG==1)
+CSB_HBTEM_FG <- subset(CSB_HBTEM,CSB_HBTEM$HBFG==1 & CSB_HBTEM$TCFG==1 & CSB_HBTEM$EDFG==1 & CSB_HBTEM$BBFG==1)
+CSB_HBTEM_UB <- subset(CSB_HBTEM,CSB_HBTEM$HBFG==0 &  CSB_HBTEM$HBMG==0 & CSB_HBTEM$TCFG==0 &  CSB_HBTEM$TCMG==0 & CSB_HBTEM$EDFG==0 &  CSB_HBTEM$EDMG==0 & CSB_HBTEM$BBFG==0 & CSB_HBTEM$BBMG==0)
+
+##HB,TCARB, BIMP, MROT &EDIL          
+CSB_HBTEME<-CSB_R[,c(1,2,3,4,5,6,7,8,9,10,11)]
+CSB_HBTEME_MG <- subset(CSB_HBTEME,CSB_HBTEME$HBMG==1 & CSB_HBTEME$TCMG==1 & CSB_HBTEME$EDMG==1 & CSB_HBTEME$BBMG==1 & CSB_HBTEME$MRMG==1)
+CSB_HBTEME_FG <- subset(CSB_HBTEME,CSB_HBTEME$HBFG==1 & CSB_HBTEME$TCFG==1 & CSB_HBTEME$EDFG==1 & CSB_HBTEME$BBFG==1 & CSB_HBTEME$MRFG==1)
+CSB_HBTEM_UB <- subset(CSB_HBTEM,CSB_HBTEM$HBFG==0 &  CSB_HBTEM$HBMG==0 & CSB_HBTEM$TCFG==0 &  CSB_HBTEM$TCMG==0 & CSB_HBTEM$EDFG==0 &  CSB_HBTEM$EDMG==0 & CSB_HBTEM$BBFG==0 & CSB_HBTEM$BBMG==0)
+```
+
+
+```{r echo=FALSE}
+# Save Files
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources")
+save(LST_R_exp,CSB_R,Sexual_Conflict,CSB_2_Ts,CSB_2_Ov,CSB_2_UB,file = "Sex_Bias_Transition.RData")
+```
+
+

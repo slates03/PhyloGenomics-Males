@@ -1,0 +1,118 @@
+---
+title: "05_Figure4_RelaxSelection.rmd"
+author: "Garett Slater"
+date: "May 26 2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r knitr setup, include=FALSE,  eval=TRUE, echo=FALSE, warning=FALSE}
+library(knitr)
+knitr::opts_chunk$set(eval=TRUE, cache=FALSE, message=FALSE, warning=FALSE, 
+                      comment = "")
+```
+
+
+```{r, include=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Code")
+source("Polyandry_Evo_Functions_V2.R", local = knitr::knit_global())
+```
+
+```{r data}
+####################################################
+##  Combined Gene-sets for analysis             ##
+####################################################
+library(pacman)
+p_load(biomatRt,tximport,DESeq2,dplyr,plyranges,ggplot2,plyr,ggpubr,reshape2,UpSetR,tispec,tidyverse,rstatix,readxl)
+
+#Load expression fies
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources")
+load(file = "AMEL.RData")
+load(file = "BIMP.RData")
+load(file = "EDIL.RData")
+load(file = "MROT.RData")
+load(file = "TCARB.RData")
+
+#Transform data to just orthologs
+LST_R_exp<-as.matrix(bind_rows(AMEL_final[[3]],BIMP_final[[3]],EDIL_final[[3]],MROT_final[[3]],TCARB_final[[3]])) 
+colnames(LST_R_exp)<-c("protein_id","MB","FB","UB","Bias","species")
+LST_R_exp<-data.frame(LST_R_exp)
+
+#Relax Files -Filter under 10
+relax<-read.table("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/relax_AMEL.txt")
+relax_EDIL<-read.table("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/relax_EDIL.txt")
+relax_EDIL<-relax_EDIL[which(relax_EDIL$set=="test"),]
+relax_EDIL$set<-"EDIL"
+relax<-rbind(relax,relax_EDIL)
+
+```
+```{r echo=FALSE}
+dnds<-read.table("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/ASBREL_DNDS_2")
+dnds<-dnds[which(dnds$dnds<10),] #Remove estimates below 5
+dnds<-dnds[which(dnds$dnds>0),]
+
+#Rate of Distribution
+dnds<-read.table("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/ASBREL_DNDS")
+dnds<-dnds[which(dnds$dnds<10),] #Remove estimates below 5
+dnds<-dnds[which(dnds$dnds>0),] #Remove estimates below 5
+
+LST_dnds <- merge(LST_R_exp,dnds, by = c("protein_id", "species"))
+sum <- LST_dnds %>% group_by(species,Bias) %>% dplyr::summarize(mean=mean(dnds),sd=sd(dnds),N=length(dnds),se=sd/sqrt(N))
+
+graph_tissue(sum,"Species","dNdS",0,0.2,"title",c("AMEL","BIMP","EDIL","MROT",'TCARB'),sum$species,sum$mean,sum$Bias)
+
+
+```
+
+# Figures 4B-D
+```{r echo=FALSE}
+#Combine files and filter only AMEL biased genes
+RPS<-data.frame(merge(LST_R_exp,relax))
+RPS<-RPS[which(RPS$dnds<10),]
+RPS<-RPS %>% filter(species=="AMEL") %>%
+  select(protein_id,Bias,p.value,k,dnds,set)
+RPS %>% group_by(Bias) %>% dplyr::summarize(median=median(log2(k)))  
+
+##K Value
+
+x<-RPS[which(RPS$Bias=="FG"),]
+
+res.aov <- aov(k ~ set, data = x)
+summary(res.aov)
+
+
+RPS%>%group_by(Bias,set)%>%dplyr::summarize(mean=mean(dnds))
+
+sp1<-boxplot(RPS,"Set","k (Selection Intensity Paramter)","Rate Relaxed Purifying Selection",0,5,c("FG","MG","UB"),RPS$Bias,RPS$k,RPS$set)
+
+##Rate of Relaxed Purifying Selection
+RPuS<-RPS[which(RPS$dnds<1),]
+sp2<-boxplot(RPuS,"Set","dNdS","Rate Relaxed Purifying Selection",0,1,c("Reference","Test"),RPuS$Bias,RPuS$dnds,RPuS$set)
+
+x<-RPuS[which(RPuS$Bias=="UB"),]
+res.aov <- aov(dnds ~ set, data = x)
+summary(res.aov)
+TukeyHSD(res.aov)
+
+##Rate of Positive Selection
+RPoS<-RPS[which(RPS$dnds>1),]
+RPoS<-RPoS[which(RPoS$dnds<10),]
+
+sp3<-boxplot(RPoS,"Set","dNdS","Rate Relaxed Positive Selection",1,10,c("Reference","Test"),RPoS$Bias,RPoS$dnds,RPoS$set)
+
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+pdf(file = "Figure4C-D_RelaxedSelection.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+ggarrange(sp1,sp2,sp3,nrow=1,ncol=3)
+dev.off()
+ggarrange(sp1,sp2,sp3,nrow=1,ncol=3)
+
+
+##Statistics
+x<-RPoS[which(RPoS$Bias=="FG"),]
+res.aov <- aov(dnds ~ set , data = x)
+summary(res.aov)
+TukeyHSD(res.aov)
+```

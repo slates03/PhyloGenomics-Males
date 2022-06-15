@@ -1,0 +1,169 @@
+---
+title: "04_Figure3_SexualConflict.rmd"
+author: "Garett Slater"
+date: "May 26 2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r knitr setup, include=FALSE,  eval=TRUE, echo=FALSE, warning=FALSE}
+library(knitr)
+knitr::opts_chunk$set(eval=TRUE, cache=FALSE, message=FALSE, warning=FALSE, 
+                      comment = "")
+```
+
+```{r, include=FALSE}
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Code")
+source("Polyandry_Evo_Functions_V2.R", local = knitr::knit_global())
+```
+
+```{r data}
+####################################################
+##  Combined Gene-sets for analysis             ##
+####################################################
+library(pacman)
+p_load(ggplot2,plyr,ggpubr,reshape2,tidyverse,rstatix,readxl,ape,geiger,nlme,phytools,ggpubr)
+
+
+#Load expression fies
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources")
+load(file = "Sex_Bias_Transition.RData")
+load(file = "AMEL.RData")
+load(file = "BIMP.RData")
+load(file = "EDIL.RData")
+load(file = "MROT.RData")
+load(file = "TCARB.RData")
+
+
+```
+
+# Figure 3B - Sexual Conflict and Sperm Length
+```{r echo=FALSE}
+####################################################
+## Figure 3B: Sexual Conflict and Sperm Length
+####################################################
+Species<-c("GEN_apis_mellifera","GEN_bombus_impatiens","TR_tetragonula_carbonaria","TR_euglossa_dilemma","GEN_megachile_rotundata")
+Sperm<-c(255,168,80,720,80)
+conflict<-c(560.4,210,180,828.08,239.78)
+data <- data.frame(Species,conflict,Sperm)
+rm(list=(c("Species", "conflict","Sperm")))
+
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+pdf(file = "Figure3B-SpermLength_SexualConclict.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+regression(data,"xaxis","yaxis","title",data$Sperm,data$conflict)
+dev.off()
+regression(data,"xaxis","yaxis","title",data$Sperm,data$conflict)
+
+beeTree <- read.tree("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/pruned.tree")
+pglsModel <- gls(conflict ~ Sperm, correlation = corBrownian(1, phy = beeTree,form=~Species),data = data, method = "ML")
+anova(pglsModel)
+```
+
+# Alternative Splicing
+```{r echo=FALSE}
+#TCARB
+Tec<-read_excel("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/INCLUSION_LEVELS_FULL_All.xlsx",sheet="TCARB")
+Tec<-Tec[1:16122,]
+Tec_ANNOT_splice<-read.table("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/Tec_ANNOT_splice.txt",header=TRUE)
+Tec<-merge(Tec,Tec_ANNOT_splice,by="EVENT")
+colnames(Tec)[8]<-"TCARB_target_id"
+Tec<-merge(Tec,TCARB_Sample[[2]]$ortho)
+Tec$UB<-rowMeans(Tec[,4:5])
+Tec<-Tec%>%select(protein_id,MG,FG,UB)
+Tec<-melt(Tec, id.vars=c("protein_id"),variable.name="Bias",value.name="PSI")
+Tec$species="TCARB"
+Tec<-Tec[which(Tec$PSI<0.95),]
+Tec<-Tec[which(Tec$PSI>0.05),]
+
+##AMEL
+Ame<-read_excel("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/INCLUSION_LEVELS_FULL_All.xlsx",sheet="AMEL")
+Ame<-Ame[1:22225,]
+Ame_ANNOT_splice<-read.table("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/Ame_ANNOT_splice.txt",header=TRUE)
+Ame<-merge(Ame,Ame_ANNOT_splice,by="EVENT")
+Ame<-merge(Ame,AMEL_Sample[[2]]$ortho)
+Ame$UB<-rowMeans(Ame[,4:5])
+Ame<-Ame%>%select(protein_id,MG,FG,UB)
+Ame<-melt(Ame, id.vars=c("protein_id"),variable.name="Bias",value.name="PSI")
+Ame$species="AMEL"
+Ame<-Ame[which(Ame$PSI<0.95),]
+Ame<-Ame[which(Ame$PSI>0.05),]
+
+#EDIL
+Edi<-read_excel("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/INCLUSION_LEVELS_FULL_All.xlsx",sheet="EDIL")
+Edi<-Edi[1:8469,]
+Edi_ANNOT_splice<-read.table("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/Edi_ANNOT_splice.txt",header=TRUE)
+Edi<-merge(Edi,Edi_ANNOT_splice,by="EVENT")
+Edi<-merge(Edi,EDIL_Sample[[2]]$ortho)
+Edi$UB<-rowMeans(Edi[,4:5])
+Edi<-Edi%>%select(protein_id,MG,FG,UB)
+Edi<-melt(Edi, id.vars=c("protein_id"),variable.name="Bias",value.name="PSI")
+Edi$species="EDIL"
+Edi<-Edi[which(Edi$PSI<0.95),]
+Edi<-Edi[which(Edi$PSI>0.05),]
+
+#MROT
+Mro<-read_excel("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/INCLUSION_LEVELS_FULL_All.xlsx",sheet="MROT")
+Mro<-Mro[1:25113,]
+Mro_ANNOT_splice<-read.table("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/Mro_ANNOT_splice.txt",header=TRUE)
+Mro<-merge(Mro,Mro_ANNOT_splice,by="EVENT")
+Mro<-merge(Mro,MROT_Sample[[2]]$ortho)
+Mro$UB<-rowMeans(Mro[,4:5])
+Mro<-Mro%>%select(protein_id,MG,FG,UB)
+Mro<-melt(Mro, id.vars=c("protein_id"),variable.name="Bias",value.name="PSI")
+Mro$species="MROT"
+Mro<-Mro[which(Mro$PSI<0.92),]
+Mro<-Mro[which(Mro$PSI>0.05),]
+
+##BIMP
+Bim<-read_excel("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/INCLUSION_LEVELS_FULL_All.xlsx",sheet="BIMP")
+Bim<-Bim[1:12822,]
+Bim_ANNOT_splice<-read.table("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Resources/Bim_ANNOT_splice.txt",header=TRUE)
+Bim<-merge(Bim,Bim_ANNOT_splice,by="EVENT")
+Bim<-merge(Bim,BIMP_Sample[[2]]$ortho)
+Bim$UB<-rowMeans(Bim[,4:5])
+Bim<-Bim%>%select(protein_id,MG,FG,UB)
+Bim<-melt(Bim, id.vars=c("protein_id"),variable.name="Bias",value.name="PSI")
+Bim$species="BIMP"
+Bim<-Bim[which(Bim$PSI<0.95),]
+Bim<-Bim[which(Bim$PSI>0.05),]
+
+splice_final<-rbind(Ame,Tec,Edi,Mro,Bim)
+splice_final<-distinct(splice_final, protein_id,Bias,species, .keep_all= TRUE)
+```
+
+
+```{r echo=FALSE}
+#Unbias
+CSB_2_UB<-transition_R(0,0,0,0,0,0,0,0,0,0)
+Sperm_UB<-select(CSB_2_UB,"protein_id")
+splice_final_2<-merge(splice_final,Sperm_UB,by=c("protein_id"))
+
+#Splicing Ovary
+splice_final_2ov<-splice_final_2[which(splice_final_2$Bias=="FG"),]
+sum_ov= splice_final_2ov %>% group_by(species) %>% dplyr::summarize(mean=mean(PSI),sd=sd(PSI),N=length(PSI),se=sd/sqrt(N))
+
+#Splicing Testes
+splice_final_2ts<-splice_final_2[which(splice_final_2$Bias=="MG"),]
+sum_ts= splice_final_2ts %>% group_by(species) %>% dplyr::summarize(mean=mean(PSI),sd=sd(PSI),N=length(PSI),se=sd/sqrt(N))
+
+
+#Graph
+setwd("~/OneDrive/Manuscripts/Polyandry_GeneEvolution/Graphics/RMD_Graphics")
+pdf(file = "Figure3C-UnbiasedSplicing.pdf", width = 12, height = 9);
+par(cex = 1.6);
+par(mar = c(0,4,2,0))
+ts<-graph_all(sum_ts,"Species","PSI",0,1,"Testes",c("AMEL","BIMP","EDIL","MROT","TCARB"),sum_ts$species,sum_ts$mean)
+ov<-graph_all(sum_ov,"Species","PSI",0,1,"Ovary",c("AMEL","BIMP","EDIL","MROT","TCARB"),sum_ov$species,sum_ov$mean)
+ggarrange(ts,ov)
+dev.off()
+
+ggarrange(ts,ov)
+
+aov<-aov(PSI~species,data=splice_final_2ov)
+summary(aov)
+TukeyHSD(aov)
+```
+
